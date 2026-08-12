@@ -248,7 +248,8 @@ static int find_checkblock(struct dhara_journal *j,
 }
 
 static dhara_block_t find_last_checkblock(struct dhara_journal *j,
-					  dhara_block_t first)
+					  dhara_block_t first,
+					  dhara_error_t *err)
 {
 	dhara_block_t low = first;
 	dhara_block_t high = j->nand->num_blocks - 1;
@@ -257,7 +258,7 @@ static dhara_block_t find_last_checkblock(struct dhara_journal *j,
 		const dhara_block_t mid = (low + high) >> 1;
 		dhara_block_t found;
 
-		if ((find_checkblock(j, mid, &found, NULL) < 0) ||
+		if ((find_checkblock(j, mid, &found, err) < 0) ||
 		    (hdr_get_epoch(j->page_buf) != j->epoch)) {
 			if (!mid)
 				return first;
@@ -268,7 +269,7 @@ static dhara_block_t find_last_checkblock(struct dhara_journal *j,
 
 			if (((found + 1) >= j->nand->num_blocks) ||
 			    (find_checkblock(j, found + 1,
-					     &nf, NULL) < 0) ||
+					     &nf, err) < 0) ||
 			    (hdr_get_epoch(j->page_buf) != j->epoch))
 				return found;
 
@@ -432,7 +433,7 @@ int dhara_journal_resume(struct dhara_journal *j, dhara_error_t *err)
 
 	/* Find the last checkpoint-containing block in this epoch */
 	j->epoch = hdr_get_epoch(j->page_buf);
-	last = find_last_checkblock(j, first);
+	last = find_last_checkblock(j, first, err);
 
 	/* Find the last programmed checkpoint group in the block */
 	last_group = find_last_group(j, last);
